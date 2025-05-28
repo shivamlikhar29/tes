@@ -81,17 +81,20 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 AUTH_USER_MODEL = 'app.User' 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dummy',
-        'USER': 'shivam',
-        'PASSWORD': '12345',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'dummy',
+#         'USER': 'shivam',
+#         'PASSWORD': '12345',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
 
+DATABASES = {
+    'default': dj_database_url.parse(config('DATABASE_URL'))
+}
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10000),  # Default is 5 minutes
@@ -101,9 +104,6 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# DATABASES = {
-#     'default': dj_database_url.parse(config('DATABASE_URL'))
-# }
 
 
 REST_FRAMEWORK = {

@@ -1,0 +1,33 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+env/
+venv/
+ENV/
+.venv/
+
+# Environment variables file (keep secrets out of Git!)
+.env
+
+# Django migrations
+*/migrations/*.pyc
+*/migrations/*.py[cod]
+*/migrations/__pycache__/
+
+# Database files (if any SQLite)
+*.sqlite3
+
+# Logs
+*.log
+
+# IDE/editor folders (example for VSCode, PyCharm)
+.vscode/
+.idea/
+
+# Static files
+/staticfiles/
+
+# macOS system files
+.DS_Store

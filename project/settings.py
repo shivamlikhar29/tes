@@ -81,23 +81,23 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 AUTH_USER_MODEL = 'app.User' 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'dummy',
-#         'USER': 'shivam',
-#         'PASSWORD': '12345',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
-
 DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'dummy',
+        'USER': 'shivam',
+        'PASSWORD': '12345',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
 }
 
+# DATABASES = {
+#     'default': dj_database_url.parse(config('DATABASE_URL'))
+# }
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10000),  # Default is 5 minutes
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=3650),  # Default is 5 minutes
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Default is 1 day
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,

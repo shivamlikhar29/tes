@@ -1,11 +1,13 @@
 from django.shortcuts import render, HttpResponse
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics, permissions
 from .models import User, UserProfile, DiabeticProfile,UserMeal
 from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer
+from .ml.predict import predict_nutrition
 
 # Create your views here.
 
@@ -61,7 +63,6 @@ class UserProfileCreateView(generics.CreateAPIView):
         Overrides creation to attach the current user to the profile before saving.
         """
         serializer.save(user=self.request.user)
-
 
 
 class DiabeticProfileCreateView(generics.CreateAPIView):
@@ -159,3 +160,12 @@ def recommend_calories(request):
     except UserProfile.DoesNotExist:
         return Response({"error": "User profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
+class NutritionPredictAPI(APIView):
+    def get(self, request):
+        food = request.GET.get('food')
+        quantity = float(request.GET.get('quantity', 100))
+
+        # Call predict_nutrition once with quantity
+        result = predict_nutrition(food, quantity)
+
+        return Response(result)

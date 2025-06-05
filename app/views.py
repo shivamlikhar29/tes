@@ -1,9 +1,23 @@
 from django.shortcuts import render, HttpResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework import generics, permissions
-from .models import User, UserProfile, DiabeticProfile
-from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer
+from .models import User, UserProfile, DiabeticProfile,UserMeal
+from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer
+from .ml.predict import predict_nutrition
 
 # Create your views here.
+
+
+def home(request):
+    """
+    A simple HTTP view to return a basic greeting message.
+    Useful for testing if the server is running.
+    """
+    return HttpResponse("Hello, world! This is the home page.")
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -12,6 +26,7 @@ class RegisterView(generics.CreateAPIView):
     """
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -50,8 +65,6 @@ class UserProfileCreateView(generics.CreateAPIView):
         serializer.save(user=self.request.user)
 
 
-
-
 class DiabeticProfileCreateView(generics.CreateAPIView):
     """
     API view to create a DiabeticProfile for the authenticated user.
@@ -76,9 +89,83 @@ class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         return DiabeticProfile.objects.get(user_profile__user=self.request.user)
 
-def home(request):
-    """
-    A simple HTTP view to return a basic greeting message.
-    Useful for testing if the server is running.
-    """
-    return HttpResponse("Hello, world! This is the home page.")
+#Meals Log CRUD API Views
+# class UserMealViewSet(viewsets.ModelViewSet):
+#     serializer_class = UserMealSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get_queryset(self):
+#         # Only return meals of the logged-in user
+#         return UserMeal.objects.filter(user=self.request.user).order_by('-consumed_at')
+
+
+# Create View
+class UserMealListCreateView(generics.ListCreateAPIView):
+    queryset = UserMeal.objects.all()
+    serializer_class = UserMealSerializer
+
+# Retrieve, Update, Delete View
+class UserMealDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = UserMeal.objects.all()
+    serializer_class = UserMealSerializer
+
+#------------------CALORIE TRACKER API ENDPOINTS----------------
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def recommend_calories(request):
+    try:
+        profile = UserProfile.objects.get(user=request.user)
+
+        weight = profile.weight_kg
+        height = profile.height_cm
+        age = profile.age
+        gender = profile.gender
+        activity_level = profile.activity_level
+        goal = profile.goal
+
+        # Calculate BMR
+        if gender == "male":
+            bmr = 10 * weight + 6.25 * height - 5 * age + 5
+        else:
+            bmr = 10 * weight + 6.25 * height - 5 * age - 161
+
+        # Activity multipliers
+        activity_multipliers = {
+            "sedentary": 1.2,
+            "light": 1.375,
+            "moderate": 1.55,
+            "active": 1.725,
+            "very_active": 1.9,
+        }
+
+        activity_multiplier = activity_multipliers.get(activity_level, 1.2)
+
+        # Adjust for goal
+        maintenance_calories = bmr * activity_multiplier
+
+        if goal == "lose_weight":
+            recommended_calories = maintenance_calories - 500
+        elif goal == "gain_weight":
+            recommended_calories = maintenance_calories + 500
+        else:
+            recommended_calories = maintenance_calories
+
+        return Response({
+            "recommended_calories": round(recommended_calories),
+            "goal": goal,
+            "activity_level": activity_level,
+            "bmr": round(bmr),
+        })
+
+    except UserProfile.DoesNotExist:
+        return Response({"error": "User profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+class NutritionPredictAPI(APIView):
+    def get(self, request):
+        food = request.GET.get('food')
+        quantity = float(request.GET.get('quantity', 100))
+
+        # Call predict_nutrition once with quantity
+        result = predict_nutrition(food, quantity)
+
+        return Response(result)

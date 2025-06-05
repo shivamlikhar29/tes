@@ -75,7 +75,6 @@ class UserProfile(models.Model):
         ],
         default="other"
     )
-    is_diabetic = models.BooleanField(default=False)
     health_conditions = models.TextField(blank=True, help_text="e.g., hypertension")
 
     def __str__(self):
@@ -94,7 +93,7 @@ class DiabeticProfile(models.Model):
 
     def __str__(self):
         return f"Diabetes Profile for {self.user_profile.name}"
-
+    
 # ------------------------
 # Food Items
 # ------------------------
@@ -111,23 +110,28 @@ class DiabeticProfile(models.Model):
 #     def __str__(self):
 #         return self.name
 
-# # ------------------------
-# # User Meal Tracking
-# # ------------------------
-# class UserMeal(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     food_item = models.ForeignKey(FoodItem, on_delete=models.CASCADE)
-#     quantity_g = models.FloatField(help_text="Quantity in grams")
-#     meal_type = models.CharField(max_length=20, choices=[
-#         ("breakfast", "Breakfast"),
-#         ("lunch", "Lunch"),
-#         ("dinner", "Dinner"),
-#         ("snack", "Snack"),
-#     ])
-#     consumed_at = models.DateTimeField(default=timezone.now)
+# ------------------------
+# User Meal Tracking
+# ------------------------
+class UserMeal(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    quantity_g = models.FloatField(help_text="Quantity in grams")
+    meal_type = models.CharField(max_length=20, choices=[
+        ("breakfast", "Breakfast"),
+        ("lunch", "Lunch"),
+        ("dinner", "Dinner"),
+        ("snack", "Snack"),
+    ])
+    consumed_at = models.DateTimeField(default=timezone.now)
+    remarks = models.TextField(blank=True, help_text="Any additional notes about the meal")
+    
 
-#     def __str__(self):
-#         return f"{self.user.email} - {self.food_item.name} on {self.consumed_at.date()}"
+    def __str__(self):
+        return f"{self.user.email} on {self.consumed_at.date()}"
+
+
+
+
 
 # # ------------------------
 # # Diet Recommendations

@@ -1,5 +1,12 @@
 from django.urls import path
-from .views import RegisterView, UserProfileDetailView, UserProfileCreateView,home,DiabeticProfileCreateView,DiabeticProfileDetailView
+from .views import (
+    RegisterView, UserProfileDetailView, UserProfileCreateView,home,
+    DiabeticProfileCreateView,DiabeticProfileDetailView,
+    UserMealDetailView,UserMealListCreateView,
+    recommend_calories,
+    NutritionPredictAPI
+    
+)
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,   # View to obtain JWT access and refresh tokens (login)
     TokenRefreshView,     # View to refresh access token using refresh token
@@ -32,6 +39,20 @@ urlpatterns = [
 
     # Get, update, or delete diabetic profile
     path('diabetic/', DiabeticProfileDetailView.as_view(), name='diabetic-profile'),
+
+    #-----------Meals CRUD API Endpoints----------------
+    # Create View
+    path('logmeal/', UserMealListCreateView.as_view(), name='usermeal-list-create'),
+
+    # Retrieve, Update, Delete View
+    path('logmeal/<int:pk>/', UserMealDetailView.as_view(), name='usermeal-detail'),
+
+    #Calorie recommendation endpoint
+    path('recommend-calories/', recommend_calories, name='recommend_calories'),
+
+    #Nutriqtion prediction endpoint
+    path('predict-nutrition/', NutritionPredictAPI.as_view(), name='nutrition_predict'),
+    
 ]
     
 

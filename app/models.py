@@ -97,37 +97,92 @@ class DiabeticProfile(models.Model):
 # ------------------------
 # Food Items
 # ------------------------
-# class FoodItem(models.Model):
-#     name = models.CharField(max_length=100)
-#     calories = models.FloatField()
-#     protein_g = models.FloatField()
-#     carbs_g = models.FloatField()
-#     fats_g = models.FloatField()
-#     sugar_g = models.FloatField()
-#     fiber_g = models.FloatField()
-#     glycemic_index = models.FloatField(null=True, blank=True)
+class FoodItem(models.Model):
+    FOOD_TYPE_CHOICES = [
+        ("vegetarian", "Vegetarian"),
+        ("non_vegetarian", "Non-Vegetarian"),
+        ("vegan", "Vegan"),
+        ("eggetarian", "Eggetarian"),
+        ("other", "Other"),
+    ]
 
-#     def __str__(self):
-#         return self.name
+    HEALTH_CONDITION_CHOICES = [
+        ("none", "None"),
+        ("diabetes", "Diabetes"),
+        ("thyroid", "Thyroid"),
+        ("hypertension", "Hypertension"),
+    ]
 
+    GOAL_CHOICES = [
+        ("weight_loss", "Weight Loss"),
+        ("maintain", "Maintain Weight"),
+        ("gain_weight", "Gain Weight"),
+    ]
+
+    name = models.CharField(max_length=100)
+    calories = models.FloatField()
+    protein_g = models.FloatField()
+    carbs_g = models.FloatField()
+    fats_g = models.FloatField()
+    sugar_g = models.FloatField()
+    fiber_g = models.FloatField()
+    glycemic_index = models.FloatField(null=True, blank=True)
+
+    food_type = models.CharField(max_length=20, choices=FOOD_TYPE_CHOICES, default="other")
+    
+    suitable_for_conditions = models.CharField(
+        max_length=50,
+        choices=HEALTH_CONDITION_CHOICES,
+        default="none",
+        help_text="Health condition this food is suitable for"
+    )
+
+    suitable_for_goal = models.CharField(
+        max_length=20,
+        choices=GOAL_CHOICES,
+        default="maintain",
+        help_text="Goal this food is suitable for"
+    )
+
+    def __str__(self):
+        return f"{self.name} ({self.food_type})"
 # ------------------------
 # User Meal Tracking
 # ------------------------
 class UserMeal(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    quantity_g = models.FloatField(help_text="Quantity in grams")
-    meal_type = models.CharField(max_length=20, choices=[
+    UNIT_CHOICES = [
+        ("g", "Grams"),
+        ("kg", "Kilograms"),
+        ("ml", "Milliliters"),
+        ("l", "Liters"),
+        ("cup", "Cup"),
+        ("bowl", "Bowl"),
+        ("piece", "Piece"),
+        ("tbsp", "Tablespoon"),
+        ("tsp", "Teaspoon"),
+        ("slice", "Slice"),
+        ("other", "Other"),
+    ]
+
+    MEAL_CHOICES = [
         ("breakfast", "Breakfast"),
         ("lunch", "Lunch"),
         ("dinner", "Dinner"),
         ("snack", "Snack"),
-    ])
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    quantity = models.FloatField(help_text="Enter the quantity of the food item")
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default="g")
+
+    meal_type = models.CharField(max_length=20, choices=MEAL_CHOICES)
     consumed_at = models.DateTimeField(default=timezone.now)
     remarks = models.TextField(blank=True, help_text="Any additional notes about the meal")
-    
+    calories = models.FloatField()
+    date = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.email} on {self.consumed_at.date()}"
+        return f"{self.user.email} on {self.consumed_at.date()} — {self.quantity} {self.unit}"
 
 
 

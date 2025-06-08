@@ -3,8 +3,6 @@ from .views import (
     RegisterView, UserProfileDetailView, UserProfileCreateView,home,
     DiabeticProfileCreateView,DiabeticProfileDetailView,
     UserMealDetailView,UserMealListCreateView,
-    recommend_calories,
-    NutritionPredictAPI
     
 )
 from rest_framework_simplejwt.views import (
@@ -47,11 +45,11 @@ urlpatterns = [
     # Retrieve, Update, Delete View
     path('logmeal/<int:pk>/', UserMealDetailView.as_view(), name='usermeal-detail'),
 
-    #Calorie recommendation endpoint
-    path('recommend-calories/', recommend_calories, name='recommend_calories'),
+    # #Calorie recommendation endpoint
+    # path('recommend-calories/', recommend_calories, name='recommend_calories'),
 
-    #Nutriqtion prediction endpoint
-    path('predict-nutrition/', NutritionPredictAPI.as_view(), name='nutrition_predict'),
+    # #Nutriqtion prediction endpoint
+    # path('predict-nutrition/', NutritionPredictAPI.as_view(), name='nutrition_predict'),
     
 ]
     

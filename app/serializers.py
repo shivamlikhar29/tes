@@ -41,39 +41,18 @@ class DiabeticProfileSerializer(serializers.ModelSerializer):
         fields = '__all__'  # Includes all fields from the model
 
 
-# CRUD API FOR MEALS LOGS
-# class UserMealSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = UserMeal
-#         fields = ['id', 'user', 'food_item', 'quantity', 'unit', 'meal_type', 'calories', 'date']
-#         read_only_fields = ['user', 'calories', 'date']
-
-
 
 class UserMealSerializer(serializers.ModelSerializer):
-    food_name = serializers.CharField(write_only=True)
-    meal_type = serializers.ChoiceField(
-        choices=["lunch", "breakfast", "dinner", "snack"],
-        write_only=True
-    )
+    food_name = serializers.CharField()
+    meal_type = serializers.ChoiceField(choices=["lunch", "breakfast", "dinner", "snack"])
 
     class Meta:
         model = UserMeal
         fields = [
-            "id",
-            "food_name",
-            "unit",
-            "quantity",
-            "meal_type",
-            "calories",
-            "protein",
-            "carbs",
-            "fats",
-            "sugar",
-            "fiber",
-            "consumed_at",
-            "remarks",
+            "id", "food_name", "meal_type", "unit", "quantity", "calories",
+            "protein", "carbs", "fats", "sugar", "fiber",
+            "consumed_at", "remarks", "date"
         ]
         read_only_fields = [
-            "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at"
+            "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at", "date"
         ]

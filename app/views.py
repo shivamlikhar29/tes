@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from django.db.models import Sum
 from rest_framework.exceptions import ValidationError   
 from utils.utils import UNIT_TO_GRAMS
+from datetime import datetime, time
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -151,6 +152,7 @@ class UserMealViewSet(viewsets.ModelViewSet):
                 user=user,
                 food_item=food_item,
                 food_name=food_item.name,
+                meal_type=meal_type,
                 calories=round(calories, 2),
                 protein=round(protein, 2),
                 carbs=round(carbs, 2),
@@ -221,7 +223,10 @@ class DailyCalorieSummaryView(APIView):
 
     def get(self, request):
         today = now().date()
-        meals_today = UserMeal.objects.filter(user=request.user, date=today)
+        start = datetime.combine(today, time.min)
+        end = datetime.combine(today, time.max)
+        meals_today = UserMeal.objects.filter(user=request.user, consumed_at__range=(start, end))
+
 
         totals = meals_today.aggregate(
             total_calories=Sum("calories"),

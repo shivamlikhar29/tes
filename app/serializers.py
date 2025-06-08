@@ -1,6 +1,9 @@
 from rest_framework import serializers
-from .models import User, UserProfile, DiabeticProfile,UserMeal, FoodItem
+from .models import User, UserProfile, DiabeticProfile,UserMeal, PatientReminder
 
+
+
+# Serializer for UserProfile model to convert it to JSON and validate incoming data
 class UserProfileSerializer(serializers.ModelSerializer):
     """
     Serializer for UserProfile model.
@@ -11,7 +14,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         exclude = ['user']  # Exclude the user field since it's linked automatically
 
-
+# Serializer for User model registration
 class RegisterSerializer(serializers.ModelSerializer):
     """
     Serializer for User model registration.
@@ -40,9 +43,9 @@ class DiabeticProfileSerializer(serializers.ModelSerializer):
         model = DiabeticProfile
         fields = '__all__'  # Includes all fields from the model
 
-
-
+# Serializer for UserMeal model to handle meal logging
 class UserMealSerializer(serializers.ModelSerializer):
+    
     food_name = serializers.CharField()
     meal_type = serializers.ChoiceField(choices=["lunch", "breakfast", "dinner", "snack"])
 
@@ -56,3 +59,25 @@ class UserMealSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at", "date"
         ]
+
+
+class PatientReminderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientReminder
+        fields = '__all__'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

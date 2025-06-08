@@ -351,8 +351,28 @@ class UserContactListView(generics.ListAPIView):
     permission_classes = [IsOperator]
 
     def get(self, request):
-        reminders = PatientReminder.objects.filter(patient=request.user)
-        data = [{"email": u.email, "name": u.get_full_name()} for u in reminders]
+        users = User.objects.filter(role="user")
+        data = []
+
+        for u in users:
+            # Check if user has a profile before accessing it
+            if hasattr(u, "userprofile"):
+                profile = u.userprofile
+                data.append({
+                    "id": u.id,
+                    "email": u.email,
+                    "contact_number": profile.mobile_number,  # assuming contact_number is here
+                    "country": profile.country,
+                })
+            else:
+                # fallback if profile missing
+                data.append({
+                    "id": u.id,
+                    "email": u.email,
+                    "contact_number": None,
+                    "country": None,
+                })
+
         return Response(data)
 
 
@@ -362,7 +382,8 @@ class OperatorReportView(APIView):
 
     def get(self, request):
         user_count = User.objects.filter(role="user").count()
-        reminders_sent = PatientReminder.objects.filter(sent=True).count()
+        # reminders_sent = PatientReminder.objects.filter(sent_at=True).count()
+        reminders_sent = PatientReminder.objects.exclude(sent_at=None).count()
         return Response({
             "total_users": user_count,
             "reminders_sent": reminders_sent,

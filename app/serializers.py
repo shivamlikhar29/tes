@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, UserProfile, DiabeticProfile,UserMeal
+from .models import User, UserProfile, DiabeticProfile,UserMeal, FoodItem
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """
@@ -42,14 +42,38 @@ class DiabeticProfileSerializer(serializers.ModelSerializer):
 
 
 # CRUD API FOR MEALS LOGS
+# class UserMealSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = UserMeal
+#         fields = ['id', 'user', 'food_item', 'quantity', 'unit', 'meal_type', 'calories', 'date']
+#         read_only_fields = ['user', 'calories', 'date']
+
+
+
 class UserMealSerializer(serializers.ModelSerializer):
+    food_name = serializers.CharField(write_only=True)
+    meal_type = serializers.ChoiceField(
+        choices=["lunch", "breakfast", "dinner", "snack"],
+        write_only=True
+    )
+
     class Meta:
         model = UserMeal
-        fields = '__all__'
-        read_only_fields = ['user']  # Prevent clients from sending user manually
-
-    def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user
-        return super().create(validated_data)
-
-
+        fields = [
+            "id",
+            "food_name",
+            "unit",
+            "quantity",
+            "meal_type",
+            "calories",
+            "protein",
+            "carbs",
+            "fats",
+            "sugar",
+            "fiber",
+            "consumed_at",
+            "remarks",
+        ]
+        read_only_fields = [
+            "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at"
+        ]

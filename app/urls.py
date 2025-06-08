@@ -1,10 +1,12 @@
 from django.urls import path
+from rest_framework.routers import DefaultRouter
+from django.urls import include
 from .views import (
     RegisterView, UserProfileDetailView, UserProfileCreateView,home,
     DiabeticProfileCreateView,DiabeticProfileDetailView,
-    UserMealDetailView,UserMealListCreateView,
-    recommend_calories,
-    NutritionPredictAPI
+    UserMealViewSet,
+    OwnerDashboardView, OperatorDashboardView, NutritionistDashboardView,
+    recommend_calories, DailyCalorieSummaryView
     
 )
 from rest_framework_simplejwt.views import (
@@ -13,9 +15,14 @@ from rest_framework_simplejwt.views import (
     TokenBlacklistView,   # View to blacklist a refresh token (logout)
 )
 
+router = DefaultRouter()
+router.register(r'logmeals', UserMealViewSet, basename='user-meals')
+
 urlpatterns = [
 
-    path('',home, name='home'),  # Home page view
+    path('', include(router.urls)), 
+
+    path('home',home, name='home'),  # Home page view
     # User registration endpoint (signup)
     path('signup/', RegisterView.as_view(), name='signup'),
 
@@ -40,19 +47,23 @@ urlpatterns = [
     # Get, update, or delete diabetic profile
     path('diabetic/', DiabeticProfileDetailView.as_view(), name='diabetic-profile'),
 
-    #-----------Meals CRUD API Endpoints----------------
-    # Create View
-    path('logmeal/', UserMealListCreateView.as_view(), name='usermeal-list-create'),
+   
 
-    # Retrieve, Update, Delete View
-    path('logmeal/<int:pk>/', UserMealDetailView.as_view(), name='usermeal-detail'),
-
-    #Calorie recommendation endpoint
+    # #Calorie recommendation endpoint
     path('recommend-calories/', recommend_calories, name='recommend_calories'),
+    ######calorie tracking ########
+    path('daily-calorie-summary/', DailyCalorieSummaryView.as_view(), name='daily_calorie_summary'),
 
-    #Nutriqtion prediction endpoint
-    path('predict-nutrition/', NutritionPredictAPI.as_view(), name='nutrition_predict'),
-    
+ 
+
+
+
+    ####################### ACTORS IN SYSTEM #######################
+    path("owner/", OwnerDashboardView.as_view(), name="owner-dashboard"),
+    path("operator/", OperatorDashboardView.as_view(), name="operator-dashboard"),
+    path("nutritionist/", NutritionistDashboardView.as_view(), name="nutritionist-dashboard"),
 ]
+    
+
     
 

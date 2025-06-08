@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils import timezone
-
+from django.utils.timezone import now
+from django.conf import settings
 
 # ---------------------- User Authentication ----------------------
 class UserManager(BaseUserManager):
@@ -29,6 +30,7 @@ class User(AbstractBaseUser):
     ]
 
     email = models.EmailField(unique=True)
+    date_joined = models.DateTimeField(default=timezone.now)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="user")
@@ -56,6 +58,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     age = models.PositiveIntegerField()
+    country = models.CharField(max_length=100, blank=True, null=True)
     mobile_number = models.CharField(max_length=15, blank=True, null=True)
     gender = models.CharField(max_length=10, choices=[("male", "Male"), ("female", "Female")])
     height_cm = models.FloatField()
@@ -213,14 +216,75 @@ class AppReport(models.Model):
 
 
 # ------------------------# Patient Reminders
+
 class PatientReminder(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'user'})
-    message = models.TextField()
-    reminder_time = models.DateTimeField()
-    sent = models.BooleanField(default=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255, default="General Reminder")
+    message = models.TextField(blank=True, default="No message provided.")
+    created_at = models.DateTimeField(auto_now_add=True)  # No default here
+    sent_at = models.DateTimeField(null=True, blank=True)
+    date = models.DateTimeField(default=now)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="created_reminders"
+    )
 
     def __str__(self):
-        return f"Reminder for {self.patient.email} at {self.reminder_time}"
+        if self.user:
+            return f"Reminder to {self.user.email} - {self.title}"
+        return f"Reminder - {self.title}"
+
+
+class Feedback(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    rating = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback by {self.user.email} - {self.rating}⭐"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # # ------------------------
 # # Diet Recommendations
 # # ------------------------

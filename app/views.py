@@ -1,32 +1,27 @@
 from django.shortcuts import render, HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from django.db.models import Sum
+from django.db.models import Count
 from rest_framework.exceptions import ValidationError   
-from utils.utils import UNIT_TO_GRAMS
+from utils.utils import UNIT_TO_GRAMS,role_required
+from datetime import datetime, time
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import viewsets
 from datetime import timedelta
 from django.utils.timezone import now
+from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework import generics, permissions
-from .models import User, UserProfile, DiabeticProfile,UserMeal,FoodItem
-from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer
+from .models import User, UserProfile, DiabeticProfile,UserMeal,FoodItem,PatientReminder
+from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer,PatientReminderSerializer
 from django.http import HttpResponseForbidden
 
 # Create your views here.
 
 ####################################DECORATORS####################################
 
-def role_required(allowed_roles):
-    def decorator(view_func):
-        def _wrapped_view(request, *args, **kwargs):
-            if not request.user.is_authenticated or request.user.role not in allowed_roles:
-                return HttpResponseForbidden("Access Denied")
-            return view_func(request, *args, **kwargs)
-        return _wrapped_view
-    return decorator
 #####################################DECORATORS####################################
 
 def home(request):
@@ -151,6 +146,7 @@ class UserMealViewSet(viewsets.ModelViewSet):
                 user=user,
                 food_item=food_item,
                 food_name=food_item.name,
+                meal_type=meal_type,
                 calories=round(calories, 2),
                 protein=round(protein, 2),
                 carbs=round(carbs, 2),
@@ -221,7 +217,10 @@ class DailyCalorieSummaryView(APIView):
 
     def get(self, request):
         today = now().date()
-        meals_today = UserMeal.objects.filter(user=request.user, date=today)
+        start = datetime.combine(today, time.min)
+        end = datetime.combine(today, time.max)
+        meals_today = UserMeal.objects.filter(user=request.user, consumed_at__range=(start, end))
+
 
         totals = meals_today.aggregate(
             total_calories=Sum("calories"),
@@ -244,15 +243,6 @@ class DailyCalorieSummaryView(APIView):
 
 
 ##############################################USER TYPES ROLES ACTORS##############################################
-class OperatorDashboardView(APIView):
-    @role_required(["operator"])
-    def get(self, request):
-        # Sample: dummy contact report
-        contacts = [
-            {"name": "Shivam", "mobile": "9999999999"},
-            {"name": "Ritik", "mobile": "8888888888"}
-        ]
-        return Response({"contacts": contacts, "message": "Operator access granted"}, status=status.HTTP_200_OK)
 
 class NutritionistDashboardView(APIView):
     @role_required(["nutritionist"])
@@ -262,6 +252,7 @@ class NutritionistDashboardView(APIView):
         data = UserProfileSerializer(patients, many=True).data
         return Response({"patients": data}, status=status.HTTP_200_OK)
 
+
 class OwnerDashboardView(APIView):
     @role_required(["owner"])
     def get(self, request):
@@ -269,20 +260,133 @@ class OwnerDashboardView(APIView):
         week_ago = today - timedelta(days=7)
         month_ago = today - timedelta(days=30)
 
-        # Sample business metrics
-        total_users = User.objects.count()
-        active_patients = UserProfile.objects.filter(user__role="user").count()
-        new_users_week = User.objects.filter(date_joined__gte=week_ago).count()
-        new_users_month = User.objects.filter(date_joined__gte=month_ago).count()
+        # Core Metrics
+        total_users = User.objects.filter(role="user").count()
+        new_users_week = User.objects.filter(role="user", date_joined__gte=week_ago).count()
+        new_users_month = User.objects.filter(role="user", date_joined__gte=month_ago).count()
+        active_patients = UserMeal.objects.filter(date__gte=week_ago).values("user").distinct().count()
 
-        # Dummy revenue logic — replace with real billing if needed
-        estimated_revenue = active_patients * 49  # Rs 49 per user/month, as an example
+        estimated_revenue = active_patients * 49
+        meals_logged_week = UserMeal.objects.filter(date__gte=week_ago).count()
+        meals_logged_month = UserMeal.objects.filter(date__gte=month_ago).count()
+        
+
+        # Country-wise User Count
+        users_by_country = (
+            UserProfile.objects.values("country")
+            .annotate(user_count=Count("id"))
+            .order_by("-user_count")
+        )
+
+        # Dummy promotion and feedback placeholder
+        feedbacks = 0
+        promotions = [
+            {"campaign": "Instagram Ad", "reach": "10k+", "status": "Running"},
+            {"campaign": "Referral Program", "reach": "5k+", "status": "Ended"},
+        ]
 
         return Response({
-            "total_users": total_users,
-            "active_patients": active_patients,
-            "new_users_last_week": new_users_week,
-            "new_users_last_month": new_users_month,
-            "estimated_revenue": f"₹{estimated_revenue}",
-            "message": "Owner dashboard access granted"
+            "date": str(today),
+            "user_stats": {
+                "total_users": total_users,
+                "new_users_week": new_users_week,
+                "new_users_month": new_users_month,
+                "active_patients_week": active_patients,
+            },
+            "usage": {
+                "meals_logged_week": meals_logged_week,
+                "meals_logged_month": meals_logged_month,
+            },
+            "revenue": f"₹{estimated_revenue}",
+            "users_by_country": users_by_country,
+            "feedback_collected": feedbacks,
+            "promotions": promotions,
+            "message": "Owner dashboard data fetched successfully"
         }, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+##############################################OPERATOR DASHBOARD VIEW#################################################################
+class IsOperator(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == "operator"
+
+
+# ✅ Create & list reminders
+class ReminderListCreateView(generics.ListCreateAPIView):
+    queryset = PatientReminder.objects.all()
+    serializer_class = PatientReminderSerializer
+    permission_classes = [IsOperator]
+
+
+class SendReminderView(APIView):
+    permission_classes = [IsOperator]
+
+    def post(self, request, pk):
+        try:
+            reminder = PatientReminder.objects.get(pk=pk)
+            # Simulate sending email/SMS
+            reminder.sent = True
+            reminder.save()
+
+            # Optional: Send email (only if you set up SMTP)
+            # send_mail(
+            #     subject="Health Reminder",
+            #     message=reminder.message,
+            #     from_email="admin@yourapp.com",
+            #     recipient_list=[reminder.user.email],
+            # )
+
+            return Response({"status": "Reminder sent!"})
+        except PatientReminder.DoesNotExist:
+            return Response({"error": "Reminder not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+# ✅ Get all users' contact info
+class UserContactListView(generics.ListAPIView):
+    permission_classes = [IsOperator]
+
+    def get(self, request):
+        users = User.objects.filter(role="user")
+        data = []
+
+        for u in users:
+            # Check if user has a profile before accessing it
+            if hasattr(u, "userprofile"):
+                profile = u.userprofile
+                data.append({
+                    "id": u.id,
+                    "email": u.email,
+                    "contact_number": profile.mobile_number,  # assuming contact_number is here
+                    "country": profile.country,
+                })
+            else:
+                # fallback if profile missing
+                data.append({
+                    "id": u.id,
+                    "email": u.email,
+                    "contact_number": None,
+                    "country": None,
+                })
+
+        return Response(data)
+
+
+# ✅ Compile report (basic version for Owner)
+class OperatorReportView(APIView):
+    permission_classes = [IsOperator]
+
+    def get(self, request):
+        user_count = User.objects.filter(role="user").count()
+        # reminders_sent = PatientReminder.objects.filter(sent_at=True).count()
+        reminders_sent = PatientReminder.objects.exclude(sent_at=None).count()
+        return Response({
+            "total_users": user_count,
+            "reminders_sent": reminders_sent,
+        })
+    
+#########################################################################################################################################3

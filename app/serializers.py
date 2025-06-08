@@ -1,6 +1,9 @@
 from rest_framework import serializers
-from .models import User, UserProfile, DiabeticProfile,UserMeal, FoodItem
+from .models import User, UserProfile, DiabeticProfile,UserMeal, PatientReminder
 
+
+
+# Serializer for UserProfile model to convert it to JSON and validate incoming data
 class UserProfileSerializer(serializers.ModelSerializer):
     """
     Serializer for UserProfile model.
@@ -11,7 +14,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         exclude = ['user']  # Exclude the user field since it's linked automatically
 
-
+# Serializer for User model registration
 class RegisterSerializer(serializers.ModelSerializer):
     """
     Serializer for User model registration.
@@ -40,40 +43,41 @@ class DiabeticProfileSerializer(serializers.ModelSerializer):
         model = DiabeticProfile
         fields = '__all__'  # Includes all fields from the model
 
-
-# CRUD API FOR MEALS LOGS
-# class UserMealSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = UserMeal
-#         fields = ['id', 'user', 'food_item', 'quantity', 'unit', 'meal_type', 'calories', 'date']
-#         read_only_fields = ['user', 'calories', 'date']
-
-
-
+# Serializer for UserMeal model to handle meal logging
 class UserMealSerializer(serializers.ModelSerializer):
-    food_name = serializers.CharField(write_only=True)
-    meal_type = serializers.ChoiceField(
-        choices=["lunch", "breakfast", "dinner", "snack"],
-        write_only=True
-    )
+    
+    food_name = serializers.CharField()
+    meal_type = serializers.ChoiceField(choices=["lunch", "breakfast", "dinner", "snack"])
 
     class Meta:
         model = UserMeal
         fields = [
-            "id",
-            "food_name",
-            "unit",
-            "quantity",
-            "meal_type",
-            "calories",
-            "protein",
-            "carbs",
-            "fats",
-            "sugar",
-            "fiber",
-            "consumed_at",
-            "remarks",
+            "id", "food_name", "meal_type", "unit", "quantity", "calories",
+            "protein", "carbs", "fats", "sugar", "fiber",
+            "consumed_at", "remarks", "date"
         ]
         read_only_fields = [
-            "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at"
+            "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at", "date"
         ]
+
+
+class PatientReminderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientReminder
+        fields = '__all__'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

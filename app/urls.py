@@ -5,8 +5,12 @@ from .views import (
     RegisterView, UserProfileDetailView, UserProfileCreateView,home,
     DiabeticProfileCreateView,DiabeticProfileDetailView,
     UserMealViewSet,
-    OwnerDashboardView, OperatorDashboardView, NutritionistDashboardView,
-    recommend_calories, DailyCalorieSummaryView
+    OwnerDashboardView, NutritionistDashboardView,
+    recommend_calories, DailyCalorieSummaryView,
+    ReminderListCreateView,
+    SendReminderView,
+    UserContactListView,
+    OperatorReportView,
     
 )
 from rest_framework_simplejwt.views import (
@@ -16,6 +20,8 @@ from rest_framework_simplejwt.views import (
 )
 
 router = DefaultRouter()
+
+#LogMeals API endpoint
 router.register(r'logmeals', UserMealViewSet, basename='user-meals')
 
 urlpatterns = [
@@ -59,11 +65,25 @@ urlpatterns = [
 
 
     ####################### ACTORS IN SYSTEM #######################
-    path("owner/", OwnerDashboardView.as_view(), name="owner-dashboard"),
-    path("operator/", OperatorDashboardView.as_view(), name="operator-dashboard"),
+    path('owner/', OwnerDashboardView.as_view(), name='owner-dashboard'),
     path("nutritionist/", NutritionistDashboardView.as_view(), name="nutritionist-dashboard"),
-]
+
+
+    ########################Operator APIs########################
+    # Operator - Create or List patient reminders
+    path("operator/reminders/", ReminderListCreateView.as_view(), name="reminder-list-create"),
     
+    # Operator - Manually send reminder email to a patient
+    path("operator/reminders/send/<int:pk>/", SendReminderView.as_view(), name="send-reminder"),        
+    
+    # Operator - View all users' contact details
+    path("operator/users/contacts/", UserContactListView.as_view(), name="user-contacts"),
+    
+    # Operator - Generate basic user and reminder reports
+    path("operator/reports/", OperatorReportView.as_view(), name="operator-report"),
+    ##################################################################################################
+]
+        
 
     
 

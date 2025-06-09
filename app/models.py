@@ -193,15 +193,6 @@ class UserMeal(models.Model):
     def __str__(self):
         return f"{self.user.email} ate {self.food_name or 'Unknown'} on {self.consumed_at.date()} — {self.quantity} {self.unit}"
 
-# ------------------------# Nutritionist Profile
-class NutritionistProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, limit_choices_to={'role': 'nutritionist'})
-    expert_level = models.PositiveSmallIntegerField(choices=[(1, 'Basic'), (2, 'Senior')], default=1)
-
-    def __str__(self):
-        return f"{self.user.email} - Level {self.expert_level}"
-
-
 
 # ------------------------For OWNER/OPERATOR
 class AppReport(models.Model):
@@ -237,6 +228,8 @@ class PatientReminder(models.Model):
         return f"Reminder - {self.title}"
 
 
+########## ------------------------
+# Feedback Model
 class Feedback(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
@@ -256,29 +249,17 @@ class Feedback(models.Model):
 
 
 
+##############Nutritionist Recommendations
+class NutritionistProfile(models.Model):
+    EXPERTISE_CHOICES = [
+        (1, 'Basic Nutritionist'),   # Handles User IDs 1-10
+        (2, 'Senior Nutritionist'),  # Handles User IDs 11-20
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    expert_level = models.IntegerField(choices=EXPERTISE_CHOICES, default=1)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def __str__(self):
+        return f"{self.user.email} - {self.get_expert_level_display()}"
 
 
 
@@ -288,26 +269,28 @@ class Feedback(models.Model):
 # # ------------------------
 # # Diet Recommendations
 # # ------------------------
-# class DietRecommendation(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     recommended_foods = models.ManyToManyField(FoodItem)
-#     created_at = models.DateTimeField(default=timezone.now)
-#     notes = models.TextField(blank=True)
-#     reason = models.TextField(help_text="ML model reason or rule-based logic")
 
-#     def __str__(self):
-#         return f"Recommendation for {self.user.email} on {self.created_at.date()}"
+class DietRecommendation(models.Model):
+    TYPE_CHOICES = [
+        ('general', 'General Recommendation'),
+        ('diabetic', 'Diabetic-Specific Recommendation'),
+    ]
 
-# # ------------------------
-# # Diabetic-Specific Recommendations
-# # ------------------------
-# class DiabeticRecommendation(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     recommended_foods = models.ManyToManyField(FoodItem)
-#     created_at = models.DateTimeField(default=timezone.now)
-#     sugar_limit_g = models.FloatField(help_text="Recommended sugar limit in grams")
-#     glycemic_index_note = models.TextField(blank=True)
-#     reason = models.TextField(help_text="ML/logic-based reason for diabetic recommendation")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    recommended_foods = models.ManyToManyField(FoodItem)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='general')
+    created_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_recommendations')
+    notes = models.TextField(blank=True)
+    reason = models.TextField(help_text="ML/logic-based reason")
+    
+    # Diabetic-specific
+    sugar_limit_g = models.FloatField(null=True, blank=True, help_text="For diabetic recommendations")
+    glycemic_index_note = models.TextField(blank=True)
 
-#     def __str__(self):
-#         return f"Diabetic Plan for {self.user.email} on {self.created_at.date()}"
+    class Meta:
+        indexes = [models.Index(fields=["user", "created_at"])]
+        unique_together = ('user', 'created_at')
+
+    def __str__(self):
+        return f"{self.get_type_display()} for {self.user.email} on {self.created_at.date()}"

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, UserProfile, DiabeticProfile, UserMeal, FoodItem,Feedback,PatientReminder
+from .models import User, UserProfile, DiabeticProfile, UserMeal, FoodItem,Feedback,PatientReminder,NutritionistProfile,DietRecommendation
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 
@@ -37,3 +37,5 @@ admin.site.register(UserMeal)
 admin.site.register(FoodItem)
 admin.site.register(Feedback)
 admin.site.register(PatientReminder)
+admin.site.register(NutritionistProfile)
+admin.site.register(DietRecommendation)

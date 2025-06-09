@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, UserProfile, DiabeticProfile,UserMeal, PatientReminder
+from .models import User, UserProfile, DiabeticProfile,UserMeal, PatientReminder, FoodItem, NutritionistProfile, DietRecommendation
 
 
 
@@ -60,13 +60,48 @@ class UserMealSerializer(serializers.ModelSerializer):
             "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at", "date"
         ]
 
-
+# Serializer for PatientReminder model to handle reminders
 class PatientReminderSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientReminder
         fields = '__all__'
 
 
+
+
+
+
+
+# Serializer for FoodItem model to handle food items
+class FoodItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FoodItem
+        fields = ['id', 'name', 'calories']
+
+# Serializer for NutritionistProfile model to handle nutritionist profiles
+class NutritionistProfileSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = NutritionistProfile
+        fields = ['id', 'user', 'expert_level']
+
+# Serializer for DietRecommendation model to handle diet recommendations
+class DietRecommendationSerializer(serializers.ModelSerializer):
+    recommended_foods = FoodItemSerializer(many=True, read_only=True)
+    recommended_foods_ids = serializers.PrimaryKeyRelatedField(
+        queryset=FoodItem.objects.all(), many=True, write_only=True, source='recommended_foods'
+    )
+    created_by = serializers.StringRelatedField(read_only=True)
+    user = serializers.StringRelatedField(read_only=True)
+    user_id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True, source='user')
+
+    class Meta:
+        model = DietRecommendation
+        fields = [
+            'id', 'user', 'user_id', 'recommended_foods', 'recommended_foods_ids', 'type',
+            'created_at', 'created_by', 'notes', 'reason', 'sugar_limit_g', 'glycemic_index_note'
+        ]
 
 
 

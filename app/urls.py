@@ -5,12 +5,15 @@ from .views import (
     RegisterView, UserProfileDetailView, UserProfileCreateView,home,
     DiabeticProfileCreateView,DiabeticProfileDetailView,
     UserMealViewSet,
-    OwnerDashboardView, NutritionistDashboardView,
+    OwnerDashboardView,
     recommend_calories, DailyCalorieSummaryView,
     ReminderListCreateView,
     SendReminderView,
     UserContactListView,
     OperatorReportView,
+    DietRecommendationListCreateView,
+    DietRecommendationDetailView,
+    UserDietRecommendationListView
     
 )
 from rest_framework_simplejwt.views import (
@@ -66,7 +69,6 @@ urlpatterns = [
 
     ####################### ACTORS IN SYSTEM #######################
     path('owner/', OwnerDashboardView.as_view(), name='owner-dashboard'),
-    path("nutritionist/", NutritionistDashboardView.as_view(), name="nutritionist-dashboard"),
 
 
     ########################Operator APIs########################
@@ -82,7 +84,17 @@ urlpatterns = [
     # Operator - Generate basic user and reminder reports
     path("operator/reports/", OperatorReportView.as_view(), name="operator-report"),
     ##################################################################################################
+
+    ###########Nutritionist APIs########################
+    path('nutritionist/diet-recommendations/', DietRecommendationListCreateView.as_view(), name='nutritionist-diet-recommendations'),
+    path('nutritionist/diet-recommendations/<int:pk>/', DietRecommendationDetailView.as_view(), name='diet-recommendation-detail'),
+
+    #User Diet Recommendations
+    path('user/diet-recommendations/', UserDietRecommendationListView.as_view(), name='user-diet-recommendations'),
 ]
+
+
+
         
 
     

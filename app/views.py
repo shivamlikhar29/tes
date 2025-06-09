@@ -8,15 +8,16 @@ from datetime import datetime, time
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from rest_framework import viewsets
 from datetime import timedelta
 from django.utils.timezone import now
 from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework import generics, permissions
-from .models import User, UserProfile, DiabeticProfile,UserMeal,FoodItem,PatientReminder
-from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer,PatientReminderSerializer
-from django.http import HttpResponseForbidden
+from .models import User, UserProfile, DiabeticProfile,UserMeal,FoodItem,PatientReminder, NutritionistProfile, DietRecommendation
+from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer,PatientReminderSerializer, NutritionistProfileSerializer, DietRecommendationSerializer
+
 
 # Create your views here.
 
@@ -244,14 +245,6 @@ class DailyCalorieSummaryView(APIView):
 
 ##############################################USER TYPES ROLES ACTORS##############################################
 
-class NutritionistDashboardView(APIView):
-    @role_required(["nutritionist"])
-    def get(self, request):
-        # Example: get all patient profiles (in real case, only assigned ones)
-        patients = UserProfile.objects.filter(user__role="user")
-        data = UserProfileSerializer(patients, many=True).data
-        return Response({"patients": data}, status=status.HTTP_200_OK)
-
 
 class OwnerDashboardView(APIView):
     @role_required(["owner"])
@@ -303,11 +296,6 @@ class OwnerDashboardView(APIView):
             "promotions": promotions,
             "message": "Owner dashboard data fetched successfully"
         }, status=status.HTTP_200_OK)
-
-
-
-
-
 
 
 ##############################################OPERATOR DASHBOARD VIEW#################################################################
@@ -389,4 +377,77 @@ class OperatorReportView(APIView):
             "reminders_sent": reminders_sent,
         })
     
-#########################################################################################################################################3
+#########################################################################################################################################
+
+############ Nutritionist Dashboard View
+class IsNutritionistWithAccess(permissions.BasePermission):
+    """
+    Allow only Nutritionists with proper expert_level to access assigned users' diet recommendations.
+    """
+
+    def has_permission(self, request, view):
+        return hasattr(request.user, 'nutritionistprofile')
+
+    def has_object_permission(self, request, view, obj):
+        profile = request.user.nutritionistprofile
+        if profile.expert_level == 1:
+            return obj.user.id in range(1, 11)
+        elif profile.expert_level == 2:
+            return obj.user.id in range(11, 21)
+        return False
+
+# For Nutritionist - List + Create
+class DietRecommendationListCreateView(generics.ListCreateAPIView):
+    queryset = DietRecommendation.objects.all().order_by('-created_at')
+    serializer_class = DietRecommendationSerializer
+    permission_classes = [permissions.IsAuthenticated, IsNutritionistWithAccess]
+
+    def get_queryset(self):
+        profile = self.request.user.nutritionistprofile
+        if profile.expert_level == 1:
+            return self.queryset.filter(user__id__range=(1, 10))
+        elif profile.expert_level == 2:
+            return self.queryset.filter(user__id__range=(11, 20))
+        return DietRecommendation.objects.none()
+
+    def perform_create(self, serializer):
+        user_id = self.request.data.get('user_id')
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise ValidationError("User with provided ID does not exist.")
+
+        # Check access before allowing creation
+        profile = self.request.user.nutritionistprofile
+        if profile.expert_level == 1 and user.id not in range(1, 11):
+            raise ValidationError("You do not have access to this user.")
+        elif profile.expert_level == 2 and user.id not in range(11, 21):
+            raise ValidationError("You do not have access to this user.")
+        
+        serializer.save(created_by=self.request.user, user=user)
+
+
+# For Nutritionist - Retrieve, Update, Delete
+class DietRecommendationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = DietRecommendation.objects.all()
+    serializer_class = DietRecommendationSerializer
+    permission_classes = [permissions.IsAuthenticated, IsNutritionistWithAccess]
+
+    def get_object(self):
+        obj = super().get_object()
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+
+# For Users - List only their own recommendations
+class UserDietRecommendationListView(generics.ListAPIView):
+    serializer_class = DietRecommendationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return DietRecommendation.objects.filter(user=self.request.user).order_by('-created_at')
+
+    queryset = DietRecommendation.objects.all()
+    serializer_class = DietRecommendationSerializer
+    permission_classes = [permissions.IsAuthenticated, IsNutritionistWithAccess]
+    # permission_classes = [permissions.IsAuthenticated]

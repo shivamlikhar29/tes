@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from django.urls import include
 from .views import (
     RegisterView, UserProfileDetailView, UserProfileCreateView,home,
-    DiabeticProfileCreateView,DiabeticProfileDetailView,
+    DiabeticProfileCreateView,DiabeticProfileDetailView,DiabeticProfileListView,
     UserMealViewSet,
     OwnerDashboardView,
     recommend_calories, DailyCalorieSummaryView,
@@ -51,12 +51,10 @@ urlpatterns = [
     path('profile/create/', UserProfileCreateView.as_view(), name='create-user-profile'),
 
      # Create diabetic profile
-    path('diabetic/create/', DiabeticProfileCreateView.as_view(), name='create-diabetic-profile'),
+    path('diabetic-reports/', DiabeticProfileListView.as_view(), name='diabetic-reports-list'),
+    path('diabetic-reports/create/', DiabeticProfileCreateView.as_view(), name='diabetic-reports-create'),
+    path('diabetic-reports/<int:pk>/', DiabeticProfileDetailView.as_view(), name='diabetic-reports-detail'),
 
-    # Get, update, or delete diabetic profile
-    path('diabetic/', DiabeticProfileDetailView.as_view(), name='diabetic-profile'),
-
-   
 
     # #Calorie recommendation endpoint
     path('recommend-calories/', recommend_calories, name='recommend_calories'),

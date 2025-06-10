@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils import timezone
 from django.utils.timezone import now
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 
 # ---------------------- User Authentication ----------------------
 class UserManager(BaseUserManager):
@@ -87,8 +88,23 @@ class UserProfile(models.Model):
         ],
         default="other"
     )
-    health_conditions = models.TextField(blank=True, help_text="e.g., hypertension")
+    HEALTH_CONDITION_CHOICES = [
+        ("diabetes", "Diabetes"),
+        ("hypertension", "Hypertension"),
+        ("thyroid", "Thyroid"),
+        ("cholesterol", "Cholesterol"),
+        ("pcos", "PCOS/PCOD"),
+        ("anemia", "Anemia"),
+        ("cancer", "Cancer"),
+        ("none", "None"),
+    ]
 
+    health_conditions = ArrayField(
+        models.CharField(max_length=20, choices=HEALTH_CONDITION_CHOICES),
+        blank=True,
+        default=list,
+        help_text="List of health conditions"
+    )
     def __str__(self):
         return f"{self.user.email} Profile"
     
@@ -96,7 +112,7 @@ class UserProfile(models.Model):
 # ---------------------- Diabetes-Specific Table ----------------------
     
 class DiabeticProfile(models.Model):
-    user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
+    user_profile = models.ForeignKey('UserProfile', on_delete=models.CASCADE, related_name='diabetic_reports')
     hba1c = models.FloatField(help_text="HbA1c level (%)")
     fasting_blood_sugar = models.FloatField(help_text="Fasting Blood Sugar (mg/dL)")
     insulin_dependent = models.BooleanField(default=False)
@@ -241,14 +257,6 @@ class Feedback(models.Model):
 
 
 
-
-
-
-
-
-
-
-
 ##############Nutritionist Recommendations
 class NutritionistProfile(models.Model):
     EXPERTISE_CHOICES = [
@@ -260,10 +268,6 @@ class NutritionistProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.get_expert_level_display()}"
-
-
-
-
 
 
 # # ------------------------

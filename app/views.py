@@ -22,8 +22,7 @@ from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfi
 # Create your views here.
 
 ####################################DECORATORS####################################
-
-#####################################DECORATORS####################################
+#####################################DECORATORS###################################
 
 def home(request):
     """
@@ -91,17 +90,28 @@ class DiabeticProfileCreateView(generics.CreateAPIView):
         serializer.save(user_profile=user_profile)
 
 
-class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+class DiabeticProfileListView(generics.ListAPIView):
     """
-    API view to retrieve, update, or delete the authenticated user's DiabeticProfile.
-    Requires authentication.
+    API view to list all diabetic reports of the authenticated user.
     """
     serializer_class = DiabeticProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
-        return DiabeticProfile.objects.get(user_profile__user=self.request.user)
+    def get_queryset(self):
+        return DiabeticProfile.objects.filter(user_profile__user=self.request.user)
 
+
+class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API view to retrieve, update, or delete a specific DiabeticProfile report of the authenticated user.
+    Requires authentication.
+    """
+    serializer_class = DiabeticProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        return DiabeticProfile.objects.filter(user_profile__user=self.request.user)
 
 class UserMealViewSet(viewsets.ModelViewSet):
     serializer_class = UserMealSerializer
@@ -245,7 +255,6 @@ class DailyCalorieSummaryView(APIView):
 
 ##############################################USER TYPES ROLES ACTORS##############################################
 
-
 class OwnerDashboardView(APIView):
     @role_required(["owner"])
     def get(self, request):
@@ -297,20 +306,19 @@ class OwnerDashboardView(APIView):
             "message": "Owner dashboard data fetched successfully"
         }, status=status.HTTP_200_OK)
 
-
 ##############################################OPERATOR DASHBOARD VIEW#################################################################
 class IsOperator(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == "operator"
 
 
-# ✅ Create & list reminders
+# Create & list reminders
 class ReminderListCreateView(generics.ListCreateAPIView):
     queryset = PatientReminder.objects.all()
     serializer_class = PatientReminderSerializer
     permission_classes = [IsOperator]
 
-
+#
 class SendReminderView(APIView):
     permission_classes = [IsOperator]
 
@@ -334,7 +342,7 @@ class SendReminderView(APIView):
             return Response({"error": "Reminder not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-# ✅ Get all users' contact info
+# Get all users' contact info
 class UserContactListView(generics.ListAPIView):
     permission_classes = [IsOperator]
 
@@ -364,7 +372,7 @@ class UserContactListView(generics.ListAPIView):
         return Response(data)
 
 
-# ✅ Compile report (basic version for Owner)
+#  Compile report (basic version for Owner)
 class OperatorReportView(APIView):
     permission_classes = [IsOperator]
 
@@ -437,7 +445,6 @@ class DietRecommendationDetailView(generics.RetrieveUpdateDestroyAPIView):
         obj = super().get_object()
         self.check_object_permissions(self.request, obj)
         return obj
-
 
 # For Users - List only their own recommendations
 class UserDietRecommendationListView(generics.ListAPIView):
